@@ -1,0 +1,15 @@
+{
+    "name": "root/hide-and-seek",
+    "authors": [
+        {
+            "name": "ming",
+            "email": "124429474@qq.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "app"
+        }
+    },
+    "require": {}
+}
