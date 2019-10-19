@@ -5,6 +5,7 @@
  * Date: 2019/10/19
  * Time: 17:22
  */
+use App\Manager\Game;
 $redId = "red_player";
 $blueId = "blue_player";
 //创建游戏控制器
