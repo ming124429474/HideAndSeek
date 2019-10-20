@@ -8,8 +8,12 @@
 
 namespace App\Manager;
 
+use App\Manager\DataCenter;
 
 class Logic
 {
-
+    public function matchPlayer($playerId)
+    {
+        DataCenter::pushPlayerToWaitList($playerId);
+    }
 }
