@@ -11,6 +11,8 @@ namespace App\Model;
 
 class Player
 {
+    const DIRECTION = [self::UP,self::DOWN,self::LEFT,self::RIGHT]; //随机选择数组
+
     const UP = 'up';
     const DOWN = 'down';
     const LEFT = 'left';
@@ -44,4 +46,37 @@ class Player
         return $this->id;
     }
 
+    public function up()
+    {
+        $this->x--;
+    }
+
+    public function down()
+    {
+        $this->x++;
+    }
+
+    public function left()
+    {
+        $this->y--;
+    }
+
+    public function right(){
+        $this->y++;
+    }
+
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    public function getX()
+    {
+        return $this->x;
+    }
+
+    public function getY()
+    {
+        return $this->y;
+    }
 }
