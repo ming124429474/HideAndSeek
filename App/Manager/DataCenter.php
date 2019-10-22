@@ -10,6 +10,7 @@ use App\Lib\Redis;
 class DataCenter
 {
     public static $global;
+    public static $server;
     const PREFIX_KEY = 'game';
 
     public static function log($info, $context=[], $level='INFO')
@@ -92,5 +93,24 @@ class DataCenter
         $playerId = self::getPlayerId($playerFd);
         self::delPlayerFd($playerId);
         self::delPlayerId($playerFd);
+    }
+    public static function initDataCenter()
+    {
+        //清空匹配队列
+        $key = self::PREFIX_KEY.':player_wait_list';
+        self::redis()->del($key);
+        //情况玩家id
+        $key  = self::PREFIX_KEY.':player_id*';
+        $values = self::redis()->keys($key);
+        foreach ($values as $value){
+            self::redis()->del($value);
+        }
+
+        //清空玩家Fd
+        $key  = self::PREFIX_KEY.':player_fd*';
+        $values = self::redis()->keys($key);
+        foreach ($values as $value){
+            self::redis()->del($value);
+        }
     }
 }

@@ -10,6 +10,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 use App\Manager\DataCenter;
 use App\Manager\Logic;
+use App\Manager\TaskManager;
 class Server
 {
     const CLIENT_CODE_MATCH_PLAYER = 600;
@@ -17,6 +18,8 @@ class Server
     const FRONT_PORT = 9501;
     const CONFIG = [
         'worker_num'=>4,
+        'task_worker_num'=>4,
+        'dispatch_mode'=>5,
         'enable_static_handler'=>true,
         'document_root'=>'/data1/Test/HideAndSeek/frontend'
     ];
@@ -31,6 +34,8 @@ class Server
         $this->ws->set(self::CONFIG);
         $this->ws->on('start', [$this, 'onStart']);
         $this->ws->on('workerStart', [$this, 'onWorkerStart']);
+        $this->ws->on('task',[$this,'onTask']);
+        $this->ws->on('finish',[$this,'onFinish']);
         $this->ws->on('open', [$this, 'onOpen']);
         $this->ws->on('message', [$this, 'onMessage']);
         $this->ws->on('close', [$this, 'onClose']);
@@ -40,6 +45,7 @@ class Server
     public function onStart($server)
     {
         swoole_set_process_name('hide-and-seek');
+        DataCenter::initDataCenter();
         echo sprintf("master start (listening on %s:%d)\n",
             self::HOST, self::FRONT_PORT);
     }
@@ -47,6 +53,7 @@ class Server
     public function onWorkerStart($server, $workerId)
     {
         echo "server: onWorkStart,worker_id:{$server->worker_id}\n";
+        DataCenter::$server = $server;
     }
 
     public function onOpen($server, $request)
@@ -71,6 +78,36 @@ class Server
         }
 
 //        $server->push($request->fd, 'test success');
+    }
+
+    public function onTask($server, $taskId, $srcWorkerId, $data)
+    {
+        DataCenter::log("onTask",$data);
+        //执行某些逻辑
+        $result = [];
+        switch ($data['code']){
+            case TaskManager::TASK_CODE_FIND_PLAYER:
+                $ret = TaskManager::findPlayer();
+                if(!empty($ret)){
+                    $result['data'] = $ret;
+                }
+                break;
+        }
+        if(!empty($result)){
+            $result['code'] = $data['code'];
+            return $result;
+        }
+    }
+
+    public function onFinish($server, $taskId,  $data)
+    {
+        //创建房间
+        DataCenter::log("onFinish", $data);
+        switch ($data['code']){
+            case TaskManager::TASK_CODE_FIND_PLAYER:
+                $this->logic->createRoom($data['data']['red_player'], $data['data']['blue_player']);
+            break;
+        }
     }
 
     public function onClose($server, $fd)

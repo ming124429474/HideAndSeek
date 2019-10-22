@@ -52,6 +52,7 @@
                 },
                 websocketonmessage(e) { //数据接收
                     let message = JSON.parse(e.data);
+                    console.log(message);
                 },
                 websocketsend(Data) {//数据发送
                     this.websock.send(JSON.stringify(Data));
