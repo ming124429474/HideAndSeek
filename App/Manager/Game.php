@@ -110,4 +110,14 @@ class Game
             echo PHP_EOL;
         }
     }
+
+    public function getPlayers()
+    {
+        return $this->players;
+    }
+
+    public function getMapData()
+    {
+        return $this->gameMap->getMapData();
+    }
 }

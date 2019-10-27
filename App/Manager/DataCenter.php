@@ -94,6 +94,26 @@ class DataCenter
         self::delPlayerFd($playerId);
         self::delPlayerId($playerFd);
     }
+
+
+    public static function setPlayerRoomId($playerId,$roomId)
+    {
+        $key = self::PREFIX_KEY . ':player_room_id:' . $playerId;
+        self::redis()->set($key, $roomId);
+    }
+
+    public static function getPlayerRoomId($playerId)
+    {
+        $key = self::PREFIX_KEY . ':player_room_id:' . $playerId;
+        return self::redis()->get($key);
+    }
+
+    public static function delPlayerRoomId($playerId)
+    {
+        $key = self::PREFIX_KEY . ':player_room_id:' . $playerId;
+        self::redis()->del($key);
+    }
+
     public static function initDataCenter()
     {
         //清空匹配队列
@@ -112,5 +132,13 @@ class DataCenter
         foreach ($values as $value){
             self::redis()->del($value);
         }
+
+        //清空玩家房间ID
+        $key  = self::PREFIX_KEY.':player_room_id*';
+        $values = self::redis()->keys($key);
+        foreach ($values as $value){
+            self::redis()->del($value);
+        }
     }
+
 }

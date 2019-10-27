@@ -9,9 +9,12 @@
 namespace App\Manager;
 
 use App\Manager\DataCenter;
+use App\Model\Player;
 
 class Logic
 {
+    const PLAYER_DISPLAY_LEN = 2;
+
     public function matchPlayer($playerId)
     {
         //将用户放入队列中
@@ -31,11 +34,96 @@ class Logic
 
     }
 
+    public function movePlayer($direction, $playerId)
+    {
+        if (!in_array($direction, Player::DIRECTION)) {
+            echo $direction;
+            return;
+        }
+        $roomId = DataCenter::getPlayerRoomId($playerId);
+        if (isset(DataCenter::$global['rooms'][$roomId])) {
+            /**
+             * @var Game $gameManager
+             */
+            $gameManager = DataCenter::$global['rooms'][$roomId]['manager'];
+            $gameManager->playerMove($playerId, $direction);
+            $this->sendGameInfo($roomId);
+            $this->checkGameOver($roomId);
+        }
+    }
+
+    private function checkGameOver($roomId)
+    {
+        $gameManager  = DataCenter::$global['rooms'][$roomId]['manager'];
+        if($gameManager->isGameOver()){
+            $players = $gameManager->getPlayers();
+            $winner = current($players)->getId();
+            foreach ($players as $player){
+                Sender::sendMessage($player->getId(),Sender::MSG_GAME_OVER,['winner'=>$winner]);
+                DataCenter::delPlayerRoomId($player->getId());
+            }
+            unset(DataCenter::$global['rooms'][$roomId]);
+        }
+    }
+
     private function bindRoomWorker($playerId, $roomId)
     {
         $playerFd = DataCenter::getPlayerFd($playerId);
         DataCenter::$server->bind($playerFd,crc32($roomId));
+        DataCenter::setPlayerRoomId($playerId,$roomId);
 //        DataCenter::$server->push($playerId,$roomId);
         Sender::sendMessage($playerId,Sender::MSG_ROOM_ID,['room_id'=>$roomId]);
+    }
+
+    public function startRoom($roomId,$playerId)
+    {
+        if(!isset(DataCenter::$global['rooms'][$roomId])){
+            DataCenter::$global['rooms'][$roomId] = [
+                'id'=>$roomId,
+                'manager'=>new Game()
+            ];
+        }
+
+        $gameManager = DataCenter::$global['rooms'][$roomId]['manager'];
+        if(empty(count($gameManager->getPlayers()))){
+            //第一个玩家
+            $gameManager->createPlayer($playerId,6,1);
+            Sender::sendMessage($playerId,Sender::MSG_WAIT_PLAYER);
+        }else{
+            //第二个玩家
+            $gameManager->createPlayer($playerId,6,10);
+            Sender::sendMessage($playerId,Sender::MSG_ROOM_START);
+            $this->sendGameInfo($roomId);
+        }
+    }
+
+    private function sendGameInfo($roomId)
+    {
+        $gameManager = DataCenter::$global['rooms'][$roomId]['manager'];
+        $players = $gameManager->getPlayers();
+        $mapData = $gameManager->getMapData();
+        foreach(array_reverse($players) as $player){
+            $mapData[$player->getX()][$player->getY()] = $player->getId();
+        }
+        foreach($players as $player){
+            $data = [
+                'players'=>$players,
+                'map_data'=>$this->getNearMap($mapData,$player->getX(),$player->getY()),
+            ];
+            Sender::sendMessage($player->getId(), Sender::MSG_GAME_INFO, $data);
+        }
+    }
+
+    private function getNearMap($mapData,$x,$y)
+    {
+        $result = [];
+        for($i = -1 * self::PLAYER_DISPLAY_LEN; $i <= self::PLAYER_DISPLAY_LEN; $i++){
+            $tmp = [];
+            for ($j =-1 * self::PLAYER_DISPLAY_LEN; $j <= self::PLAYER_DISPLAY_LEN;$j++){
+                $tmp[] = $mapData[$x+$i][$y+$j] ??0;
+            }
+            $result[] = $tmp;
+        }
+        return $result;
     }
 }

@@ -13,7 +13,9 @@ use App\Manager\Logic;
 use App\Manager\TaskManager;
 class Server
 {
-    const CLIENT_CODE_MATCH_PLAYER = 600;
+    const CLIENT_CODE_MATCH_PLAYER = 600;  //玩家匹配指令
+    const CLIENT_CODE_START_ROOM  = 601;  //游戏开始指令
+    const CLIENT_CODE_MOVE_PLAYER = 602;  //移动指令
     const HOST='0.0.0.0';
     const FRONT_PORT = 9501;
     const CONFIG = [
@@ -75,6 +77,12 @@ class Server
             case self::CLIENT_CODE_MATCH_PLAYER:
                 $this->logic->matchPlayer($playerId);
                 break;
+            case self::CLIENT_CODE_START_ROOM:
+                $this->logic->startRoom($data['room_id'],$playerId);
+                break;
+            case self::CLIENT_CODE_MOVE_PLAYER:
+                $this->logic->movePlayer($data['direction'],$playerId);
+                break;
         }
 
 //        $server->push($request->fd, 'test success');
@@ -92,6 +100,7 @@ class Server
                     $result['data'] = $ret;
                 }
                 break;
+
         }
         if(!empty($result)){
             $result['code'] = $data['code'];
